@@ -37,6 +37,14 @@
     "networkInterfaces_web2_z2_name": {
       "defaultValue": "web2_z2",
       "type": "String"
+    },
+    "publicIPAddresses_LB_ip_name": {
+      "defaultValue": "LB-ip",
+      "type": "String"
+    },
+    "loadBalancers_LB_WEB_name": {
+      "defaultValue": "LB-WEB",
+      "type": "String"
     }
   },
   "variables": {},
@@ -140,6 +148,92 @@
         "ddosSettings": {
           "protectionMode": "VirtualNetworkInherited"
         }
+      }
+    },
+    {
+      "type": "Microsoft.Network/publicIPAddresses",
+      "apiVersion": "2024-07-01",
+      "name": "[parameters('publicIPAddresses_LB_ip_name')]",
+      "location": "canadacentral",
+      "sku": {
+        "name": "Standard",
+        "tier": "Regional"
+      },
+      "zones": [
+        "2"
+      ],
+      "properties": {
+        "publicIPAddressVersion": "IPv4",
+        "publicIPAllocationMethod": "Static",
+        "idleTimeoutInMinutes": 4,
+        "ipTags": [],
+        "ddosSettings": {
+          "protectionMode": "VirtualNetworkInherited"
+        }
+      }
+    },
+    {
+      "type": "Microsoft.Network/loadBalancers",
+      "apiVersion": "2024-07-01",
+      "name": "[parameters('loadBalancers_LB_WEB_name')]",
+      "location": "canadacentral",
+      "sku": {
+        "name": "Standard",
+        "tier": "Regional"
+      },
+      "dependsOn": [
+        "[resourceId('Microsoft.Network/publicIPAddresses', parameters('publicIPAddresses_LB_ip_name'))]"
+      ],
+      "properties": {
+        "frontendIPConfigurations": [
+          {
+            "name": "LB-Frontend",
+            "properties": {
+              "publicIPAddress": {
+                "id": "[resourceId('Microsoft.Network/publicIPAddresses', parameters('publicIPAddresses_LB_ip_name'))]"
+              }
+            }
+          }
+        ],
+        "backendAddressPools": [
+          {
+            "name": "BackendPool"
+          }
+        ],
+        "probes": [
+          {
+            "name": "httpProbe",
+            "properties": {
+              "protocol": "Http",
+              "port": 80,
+              "requestPath": "/",
+              "intervalInSeconds": 5,
+              "numberOfProbes": 2
+            }
+          }
+        ],
+        "loadBalancingRules": [
+          {
+            "name": "httpRule",
+            "properties": {
+              "protocol": "Tcp",
+              "frontendPort": 80,
+              "backendPort": 80,
+              "enableFloatingIP": false,
+              "idleTimeoutInMinutes": 4,
+              "loadDistribution": "Default",
+              "frontendIPConfiguration": {
+                "id": "[resourceId('Microsoft.Network/loadBalancers/frontendIPConfigurations', parameters('loadBalancers_LB_WEB_name'), 'LB-Frontend')]"
+              },
+              "backendAddressPool": {
+                "id": "[resourceId('Microsoft.Network/loadBalancers/backendAddressPools', parameters('loadBalancers_LB_WEB_name'), 'BackendPool')]"
+              },
+              "probe": {
+                "id": "[resourceId('Microsoft.Network/loadBalancers/probes', parameters('loadBalancers_LB_WEB_name'), 'httpProbe')]"
+              }
+            }
+          }
+        ]
       }
     },
     {
@@ -448,7 +542,8 @@
       "dependsOn": [
         "[resourceId('Microsoft.Network/publicIPAddresses', parameters('publicIPAddresses_WEB1_ip_name'))]",
         "[resourceId('Microsoft.Network/virtualNetworks/subnets', parameters('virtualNetworks_VNET_LAB1_name'), 'SUBNET-WEB')]",
-        "[resourceId('Microsoft.Network/networkSecurityGroups', parameters('networkSecurityGroups_NSG_WEB_name'))]"
+        "[resourceId('Microsoft.Network/networkSecurityGroups', parameters('networkSecurityGroups_NSG_WEB_name'))]",
+        "[resourceId('Microsoft.Network/loadBalancers', parameters('loadBalancers_LB_WEB_name'))]"
       ],
       "kind": "Regular",
       "properties": {
@@ -470,7 +565,12 @@
                 "id": "[resourceId('Microsoft.Network/virtualNetworks/subnets', parameters('virtualNetworks_VNET_LAB1_name'), 'SUBNET-WEB')]"
               },
               "primary": true,
-              "privateIPAddressVersion": "IPv4"
+              "privateIPAddressVersion": "IPv4",
+              "loadBalancerBackendAddressPools": [
+                {
+                  "id": "[resourceId('Microsoft.Network/loadBalancers/backendAddressPools', parameters('loadBalancers_LB_WEB_name'), 'BackendPool')]"
+                }
+              ]
             }
           }
         ],
@@ -496,7 +596,8 @@
       "dependsOn": [
         "[resourceId('Microsoft.Network/publicIPAddresses', parameters('publicIPAddresses_WEB2_ip_name'))]",
         "[resourceId('Microsoft.Network/virtualNetworks/subnets', parameters('virtualNetworks_VNET_LAB1_name'), 'SUBNET-WEB')]",
-        "[resourceId('Microsoft.Network/networkSecurityGroups', parameters('networkSecurityGroups_NSG_WEB_name'))]"
+        "[resourceId('Microsoft.Network/networkSecurityGroups', parameters('networkSecurityGroups_NSG_WEB_name'))]",
+        "[resourceId('Microsoft.Network/loadBalancers', parameters('loadBalancers_LB_WEB_name'))]"
       ],
       "kind": "Regular",
       "properties": {
@@ -518,7 +619,12 @@
                 "id": "[resourceId('Microsoft.Network/virtualNetworks/subnets', parameters('virtualNetworks_VNET_LAB1_name'), 'SUBNET-WEB')]"
               },
               "primary": true,
-              "privateIPAddressVersion": "IPv4"
+              "privateIPAddressVersion": "IPv4",
+              "loadBalancerBackendAddressPools": [
+                {
+                  "id": "[resourceId('Microsoft.Network/loadBalancers/backendAddressPools', parameters('loadBalancers_LB_WEB_name'), 'BackendPool')]"
+                }
+              ]
             }
           }
         ],

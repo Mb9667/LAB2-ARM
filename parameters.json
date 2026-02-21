@@ -28,6 +28,12 @@
     },
     "networkInterfaces_web2_z2_name": {
       "value": "web2_z2"
+    },
+    "publicIPAddresses_LB_ip_name": {
+      "value": null
+    },
+    "loadBalancers_LB_WEB_name": {
+      "value": null
     }
   }
 }
