@@ -1,0 +1,24 @@
+{
+  "$schema": "https://schema.management.azure.com/schemas/2015-01-01/deploymentParameters.json#",
+  "contentVersion": "1.0.0.0",
+  "parameters": {
+    "virtualMachines_WEB1_name": {
+      "value": "WEB1"
+    },
+    "sshPublicKeys_WEB1_key_name": {
+      "value": "WEB1_key"
+    },
+    "publicIPAddresses_WEB1_ip_name": {
+      "value": "WEB1-ip"
+    },
+    "virtualNetworks_VNET_LAB1_name": {
+      "value": "VNET-LAB1"
+    },
+    "networkInterfaces_web1854_z2_name": {
+      "value": "web1854_z2"
+    },
+    "networkSecurityGroups_NSG_WEB_name": {
+      "value": "NSG-WEB"
+    }
+  }
+}
