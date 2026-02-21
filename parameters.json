@@ -19,6 +19,15 @@
     },
     "networkSecurityGroups_NSG_WEB_name": {
       "value": "NSG-WEB"
+    },
+    "virtualMachines_WEB2_name": {
+      "value": "WEB2"
+    },
+    "publicIPAddresses_WEB2_ip_name": {
+      "value": "WEB2-ip"
+    },
+    "networkInterfaces_web2_z2_name": {
+      "value": "web2_z2"
     }
   }
 }

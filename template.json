@@ -25,6 +25,18 @@
     "networkSecurityGroups_NSG_WEB_name": {
       "defaultValue": "NSG-WEB",
       "type": "String"
+    },
+    "virtualMachines_WEB2_name": {
+      "defaultValue": "WEB2",
+      "type": "String"
+    },
+    "publicIPAddresses_WEB2_ip_name": {
+      "defaultValue": "WEB2-ip",
+      "type": "String"
+    },
+    "networkInterfaces_web2_z2_name": {
+      "defaultValue": "web2_z2",
+      "type": "String"
     }
   },
   "variables": {},
@@ -90,6 +102,28 @@
       "type": "Microsoft.Network/publicIPAddresses",
       "apiVersion": "2024-07-01",
       "name": "[parameters('publicIPAddresses_WEB1_ip_name')]",
+      "location": "canadacentral",
+      "sku": {
+        "name": "Standard",
+        "tier": "Regional"
+      },
+      "zones": [
+        "2"
+      ],
+      "properties": {
+        "publicIPAddressVersion": "IPv4",
+        "publicIPAllocationMethod": "Static",
+        "idleTimeoutInMinutes": 4,
+        "ipTags": [],
+        "ddosSettings": {
+          "protectionMode": "VirtualNetworkInherited"
+        }
+      }
+    },
+    {
+      "type": "Microsoft.Network/publicIPAddresses",
+      "apiVersion": "2024-07-01",
+      "name": "[parameters('publicIPAddresses_WEB2_ip_name')]",
       "location": "canadacentral",
       "sku": {
         "name": "Standard",
@@ -192,7 +226,6 @@
             "deleteOption": "Delete",
             "diskSizeGB": 30
           },
-          "dataDisks": [],
           "diskControllerType": "SCSI"
         },
         "osProfile": {
@@ -230,7 +263,97 @@
         "networkProfile": {
           "networkInterfaces": [
             {
-              "id": "[resourceId('Microsoft.Network/networkInterfaces', parameters('networkInterfaces_web1854_z2_name'))]"
+              "id": "[resourceId('Microsoft.Network/networkInterfaces', parameters('networkInterfaces_web1854_z2_name'))]",
+              "properties": {
+                "deleteOption": "Detach"
+              }
+            }
+          ]
+        },
+        "diagnosticsProfile": {
+          "bootDiagnostics": {
+            "enabled": true
+          }
+        }
+      }
+    },
+    {
+      "type": "Microsoft.Compute/virtualMachines",
+      "apiVersion": "2024-11-01",
+      "name": "[parameters('virtualMachines_WEB2_name')]",
+      "location": "canadacentral",
+      "dependsOn": [
+        "[resourceId('Microsoft.Network/networkInterfaces', parameters('networkInterfaces_web2_z2_name'))]"
+      ],
+      "zones": [
+        "2"
+      ],
+      "properties": {
+        "hardwareProfile": {
+          "vmSize": "Standard_D2s_v3"
+        },
+        "additionalCapabilities": {
+          "hibernationEnabled": false
+        },
+        "storageProfile": {
+          "imageReference": {
+            "publisher": "canonical",
+            "offer": "0001-com-ubuntu-server-jammy",
+            "sku": "22_04-lts-gen2",
+            "version": "latest"
+          },
+          "osDisk": {
+            "osType": "Linux",
+            "name": "[concat(parameters('virtualMachines_WEB2_name'), '_OsDisk_1')]",
+            "createOption": "FromImage",
+            "caching": "ReadWrite",
+            "managedDisk": {
+              "storageAccountType": "Premium_LRS"
+            },
+            "deleteOption": "Delete",
+            "diskSizeGB": 30
+          },
+          "diskControllerType": "SCSI"
+        },
+        "osProfile": {
+          "computerName": "[parameters('virtualMachines_WEB2_name')]",
+          "adminUsername": "azureuser",
+          "linuxConfiguration": {
+            "disablePasswordAuthentication": true,
+            "ssh": {
+              "publicKeys": [
+                {
+                  "path": "/home/azureuser/.ssh/authorized_keys",
+                  "keyData": "ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABgQDG+5UrgUaGNylvMVKG1Hg13vVjTW/iI/M6PqzKpu5sdjbTsAQZa7vbG9bNen0MMTXfD4Gah+H31mn9adEkflpRKYxK7xVOReS86VcFrca6lfVxAHaW7Z1/b4MFpqPGJeMyj/a4QXSsxAvKhDa663F6XsGUkD/1QlHfBLGlVfiv+Y+5X548IULQRiSXa2Y104HilXqqg7W9Up83NAeGNtgyo1UjGHIxTplYocizueH6wOma7oG98PLCX8xHlwu3A/6YX0oBl+4/B1GFjfBav+VN7MP5I81UuvY8YH710PNiws5Znm3ilN5v+CRL9S/P4NCDOkl0ftQ7fkC3yJ3BLxylQ/vlxUokfPQU7+yi1RnfIPhQNUUnG2qfGPVNOIiJVsJcw7xeXzJOAJ3P8e4TnRBcS1h4o/h4jQRiZBVi9tH20g66KfXoz3pi7gonCRPGlu1O+KydvmQ3UWBDdoFNQWM/m2ouatZZ3LK2sLYp8dRHzR67Vaonoo+R2B+szcrighk= generated-by-azure"
+                }
+              ]
+            },
+            "provisionVMAgent": true,
+            "patchSettings": {
+              "patchMode": "AutomaticByPlatform",
+              "automaticByPlatformSettings": {
+                "rebootSetting": "IfRequired"
+              },
+              "assessmentMode": "ImageDefault"
+            }
+          },
+          "secrets": [],
+          "allowExtensionOperations": true
+        },
+        "securityProfile": {
+          "uefiSettings": {
+            "secureBootEnabled": true,
+            "vTpmEnabled": true
+          },
+          "securityType": "TrustedLaunch"
+        },
+        "networkProfile": {
+          "networkInterfaces": [
+            {
+              "id": "[resourceId('Microsoft.Network/networkInterfaces', parameters('networkInterfaces_web2_z2_name'))]",
+              "properties": {
+                "deleteOption": "Detach"
+              }
             }
           ]
         },
@@ -335,9 +458,61 @@
             "id": "[concat(resourceId('Microsoft.Network/networkInterfaces', parameters('networkInterfaces_web1854_z2_name')), '/ipConfigurations/ipconfig1')]",
             "type": "Microsoft.Network/networkInterfaces/ipConfigurations",
             "properties": {
+              "privateIPAddress": "10.0.1.4",
               "privateIPAllocationMethod": "Dynamic",
               "publicIPAddress": {
-                "id": "[resourceId('Microsoft.Network/publicIPAddresses', parameters('publicIPAddresses_WEB1_ip_name'))]"
+                "id": "[resourceId('Microsoft.Network/publicIPAddresses', parameters('publicIPAddresses_WEB1_ip_name'))]",
+                "properties": {
+                  "deleteOption": "Detach"
+                }
+              },
+              "subnet": {
+                "id": "[resourceId('Microsoft.Network/virtualNetworks/subnets', parameters('virtualNetworks_VNET_LAB1_name'), 'SUBNET-WEB')]"
+              },
+              "primary": true,
+              "privateIPAddressVersion": "IPv4"
+            }
+          }
+        ],
+        "dnsSettings": {
+          "dnsServers": []
+        },
+        "enableAcceleratedNetworking": true,
+        "enableIPForwarding": false,
+        "disableTcpStateTracking": false,
+        "networkSecurityGroup": {
+          "id": "[resourceId('Microsoft.Network/networkSecurityGroups', parameters('networkSecurityGroups_NSG_WEB_name'))]"
+        },
+        "nicType": "Standard",
+        "auxiliaryMode": "None",
+        "auxiliarySku": "None"
+      }
+    },
+    {
+      "type": "Microsoft.Network/networkInterfaces",
+      "apiVersion": "2024-07-01",
+      "name": "[parameters('networkInterfaces_web2_z2_name')]",
+      "location": "canadacentral",
+      "dependsOn": [
+        "[resourceId('Microsoft.Network/publicIPAddresses', parameters('publicIPAddresses_WEB2_ip_name'))]",
+        "[resourceId('Microsoft.Network/virtualNetworks/subnets', parameters('virtualNetworks_VNET_LAB1_name'), 'SUBNET-WEB')]",
+        "[resourceId('Microsoft.Network/networkSecurityGroups', parameters('networkSecurityGroups_NSG_WEB_name'))]"
+      ],
+      "kind": "Regular",
+      "properties": {
+        "ipConfigurations": [
+          {
+            "name": "ipconfig1",
+            "id": "[concat(resourceId('Microsoft.Network/networkInterfaces', parameters('networkInterfaces_web1854_z2_name')), '/ipConfigurations/ipconfig1')]",
+            "type": "Microsoft.Network/networkInterfaces/ipConfigurations",
+            "properties": {
+              "privateIPAddress": "10.0.1.4",
+              "privateIPAllocationMethod": "Dynamic",
+              "publicIPAddress": {
+                "id": "[resourceId('Microsoft.Network/publicIPAddresses', parameters('publicIPAddresses_WEB2_ip_name'))]",
+                "properties": {
+                  "deleteOption": "Detach"
+                }
               },
               "subnet": {
                 "id": "[resourceId('Microsoft.Network/virtualNetworks/subnets', parameters('virtualNetworks_VNET_LAB1_name'), 'SUBNET-WEB')]"
